@@ -11,7 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
       - uses: astral-sh/ruff-action@v3
-        with:
-          args: --fix 
+
+      - name: Run Ruff linter
+        run: ruff check --fix
+
+      - name: Run Ruff formatter
+        run: ruff format --check
