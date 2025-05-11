@@ -8,6 +8,7 @@ help:
 
 install: ## Install packages for all services
 	uv sync --frozen --no-cache
+	pre-commit install
 
 run: ## Run the application
 	docker compose up --build -d

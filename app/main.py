@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI
 
 app = FastAPI()
 
@@ -7,5 +7,3 @@ app = FastAPI()
 async def root():
     print("Hello World")
     return {"message": "Hello World"}
-
-
