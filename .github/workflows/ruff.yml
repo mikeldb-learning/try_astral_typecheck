@@ -12,20 +12,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: astral-sh/ruff-action@v3
         with:
-          python-version: '3.13'
-          
-      - name: Install uv
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          
-      - name: Install dependencies
-        run: |
-          uv tool install ruff
-          
-      - name: Run Ruff
-        run: |
-          ruff check .
-          ruff format --check . 
+          args: --fix 
