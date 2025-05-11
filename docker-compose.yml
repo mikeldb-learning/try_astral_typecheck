@@ -1,7 +1,23 @@
 version: '3.8'
 
 services:
-  web:
+  database:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+  api:
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,5 +26,11 @@ services:
     volumes:
       - .:/app:delegated
     environment:
-      - PYTHONUNBUFFERED=1 
-    command: ["uv", "run", "fastapi", "dev", "app/main.py",  "--port", "80"]
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      database:
+        condition: service_healthy
+    command: ["uv", "run", "fastapi", "dev", "app/main.py", "--port", "80"]
+
+volumes:
+  postgres_data:
