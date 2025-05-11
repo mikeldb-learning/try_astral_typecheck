@@ -1,6 +1,11 @@
-def main():
-    print("Hello from try-astral-typecheck!")
+from fastapi import FastAPI, Depends
+
+app = FastAPI()
 
 
-if __name__ == "__main__":
-    main()
+@app.get("/")
+async def root():
+    print("Hello World")
+    return {"message": "Hello World"}
+
+

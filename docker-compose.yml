@@ -11,4 +11,4 @@ services:
       - .:/app:delegated
     environment:
       - PYTHONUNBUFFERED=1 
-    command: ["uv", "run", "app/main.py"]
+    command: ["uv", "run", "fastapi", "dev", "app/main.py",  "--port", "80"]
