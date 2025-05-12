@@ -1,0 +1,29 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install --no-cache-dir \
+    alembic \
+    sqlalchemy \
+    asyncpg \
+    psycopg2-binary \
+    pydantic \
+    pydantic-settings \
+    fastapi
+
+# Copy application code
+COPY . .
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+
+# Default command (can be overridden in docker-compose.yml)
+CMD ["alembic", "upgrade", "head"] 
