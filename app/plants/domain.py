@@ -30,17 +30,19 @@ class CareLog(BaseModel):
 
 
 class Plant(BaseModel):
-    id: int
+    id: int | None = (
+        None  # Not the best idea, I like to generate the id on my domain but this is just a test so this will do
+    )
     name: str
     species: str
     description: str
     watering_frequency: WateringFrequency
     light_requirement: LightRequirement
-    last_watered: datetime
-    next_watering: datetime
-    created_at: datetime
-    updated_at: datetime
-    care_logs: list[CareLog]
+    last_watered: datetime | None = None
+    next_watering: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+    care_logs: list[CareLog] = []
 
 
 class PlantRepository(ABC):

@@ -2,10 +2,10 @@ from typing import Annotated
 from datetime import datetime
 
 from fastapi import Depends
-from sqlalchemy import String, Integer, DateTime, Text, ForeignKey, Enum
+from sqlalchemy import String, Integer, DateTime, Text, ForeignKey, Enum, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+from app.core.database import Base, async_session
 from app.plants.domain import (
     LightRequirement,
     Plant,
@@ -17,7 +17,7 @@ from app.plants.application import PlantsUoW
 
 
 # lets now create our database models with everything we're going to need and a function to transform them into our domain models called to_do``
-class Plant(Base):
+class DBPlant(Base):
     __tablename__ = "plants"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -37,8 +37,8 @@ class Plant(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
-    care_logs: Mapped[list["CareLog"]] = relationship(
-        "CareLog", back_populates="plant", cascade="all, delete-orphan"
+    care_logs: Mapped[list["DBCareLog"]] = relationship(
+        "DBCareLog", back_populates="plant", cascade="all, delete-orphan"
     )
 
     def to_domain(self) -> Plant:
@@ -57,7 +57,7 @@ class Plant(Base):
         )
 
 
-class CareLog(Base):
+class DBCareLog(Base):
     __tablename__ = "care_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -70,7 +70,7 @@ class CareLog(Base):
     notes: Mapped[str] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    plant: Mapped["Plant"] = relationship("Plant", back_populates="care_logs")
+    plant: Mapped["DBPlant"] = relationship("DBPlant", back_populates="care_logs")
 
     def to_domain(self) -> CareLog:
         return CareLog(
@@ -80,16 +80,64 @@ class CareLog(Base):
 
 class PostgresPlantRepository(PlantRepository):
     async def get_all(self) -> list[Plant]:
-        return [Plant(id=1, name="Plant 1", description="Plant 1 description")]
+        async with async_session() as session:
+            stmt = select(DBPlant)
+            result = await session.execute(stmt)
+            db_plants = result.scalars().all()
+            return [plant.to_domain() for plant in db_plants]
 
     async def get(self, id: int) -> Plant:
-        return Plant(id=1, name="Plant 1", description="Plant 1 description")
+        async with async_session() as session:
+            stmt = select(DBPlant).where(DBPlant.id == id)
+            result = await session.execute(stmt)
+            db_plant = result.scalar_one_or_none()
+            if not db_plant:
+                raise ValueError(f"Plant with id {id} not found")
+            return db_plant.to_domain()
 
     async def save(self, plant: Plant) -> Plant:
-        return plant
+        async with async_session() as session:
+            if plant.id:
+                # Update existing plant
+                stmt = select(DBPlant).where(DBPlant.id == plant.id)
+                result = await session.execute(stmt)
+                db_plant = result.scalar_one_or_none()
+
+                if db_plant:
+                    db_plant.name = plant.name
+                    db_plant.species = plant.species
+                    db_plant.description = plant.description
+                    db_plant.watering_frequency = plant.watering_frequency
+                    db_plant.light_requirement = plant.light_requirement
+                    db_plant.last_watered = plant.last_watered
+                    db_plant.next_watering = plant.next_watering
+                    db_plant.updated_at = datetime.utcnow()
+            else:
+                # Create new plant
+                db_plant = DBPlant(
+                    name=plant.name,
+                    species=plant.species,
+                    description=plant.description,
+                    watering_frequency=plant.watering_frequency,
+                    light_requirement=plant.light_requirement,
+                    last_watered=plant.last_watered,
+                    next_watering=plant.next_watering,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
+                )
+                session.add(db_plant)
+
+            await session.commit()
+            return db_plant.to_domain()
 
     async def delete(self, id: int) -> None:
-        pass
+        async with async_session() as session:
+            stmt = select(DBPlant).where(DBPlant.id == id)
+            result = await session.execute(stmt)
+            db_plant = result.scalar_one_or_none()
+            if db_plant:
+                await session.delete(db_plant)
+                await session.commit()
 
 
 class PostgresPlantsUoW(PlantsUoW):

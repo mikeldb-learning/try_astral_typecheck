@@ -26,3 +26,8 @@ async def get_db() -> AsyncGeneratorType:
             yield session
         finally:
             await session.close()
+
+
+async def async_session() -> AsyncSession:
+    """Create a new async session."""
+    return AsyncSessionLocal()

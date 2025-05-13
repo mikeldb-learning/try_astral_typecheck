@@ -11,7 +11,9 @@ router = APIRouter(prefix="/plants", tags=["plants"])
 
 
 @router.get("/", response_model=list[Plant])
-async def read_plants(uow: Annotated[PostgresPlantsUoW, Depends(PostgresPlantsUoW)]):
+async def route_get_plants(
+    uow: Annotated[PostgresPlantsUoW, Depends(PostgresPlantsUoW)],
+):
     return await get_plants(uow)
 
 
